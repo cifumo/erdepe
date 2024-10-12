@@ -16,12 +16,22 @@ jobs:
             -OutFile "ngrok.zip"
 
       - name: Extract ngrok
-        run: Expand-Archive -Path ngrok.zip -DestinationPath .
+        run: Expand-Archive -Path ngrok.zip -DestinationPath ./ngrok
+
+      - name: List Extracted Files (Debug)
+        run: Get-ChildItem -Path ./ngrok -Recurse
 
       - name: Authenticate ngrok
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+        run: |
+          $ngrokPath = ".\ngrok\ngrok.exe"
+          if (Test-Path $ngrokPath) {
+            & $ngrokPath authtoken $Env:NGROK_AUTH_TOKEN
+          } else {
+            Write-Error "ngrok.exe not found!"
+            exit 1
+          }
 
       - name: Enable Remote Desktop (RDP)
         run: |
@@ -37,4 +47,11 @@ jobs:
           Set-LocalUser -Name "runneradmin" -Password $password
 
       - name: Create ngrok Tunnel
-        run: .\ngrok\ngrok.exe tcp 3389
+        run: |
+          $ngrokPath = ".\ngrok\ngrok.exe"
+          if (Test-Path $ngrokPath) {
+            & $ngrokPath tcp 3389
+          } else {
+            Write-Error "ngrok.exe not found!"
+            exit 1
+          }
